@@ -18,7 +18,7 @@ feature_params = dict(
 
 
 class RodentTracker:
-    def __init__(self, src, resize_height=480, max_flow=1000, max_features=50, feature_history=2, odometry_history=2, visualize=False):
+    def __init__(self, resize_height=480, max_flow=1000, max_features=50, feature_history=2, odometry_history=2, visualize=False):
         # resize frame height
         self.frame_height = resize_height
 
@@ -36,7 +36,6 @@ class RodentTracker:
         self.frame_width = None
 
         self.clahe = cv.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        self.src = src
 
         self.prev_frame = None
         self.prev_gray = None
@@ -44,9 +43,6 @@ class RodentTracker:
         self.visualization = None
         self.gray = None
         self.tile_map = None
-
-        self.read_frame()
-        self.enhance_tiles()
 
         self.features = []
         self.path = np.array([[0, 0]])
@@ -114,12 +110,12 @@ class RodentTracker:
         # return mean of "good" flow
         return np.mean(flow[mask == 1], axis=0)
 
-    def read_frame(self):
+    def read_frame(self, frame):
         # handle new frame read
         self.prev_frame = self.frame
         self.prev_gray = self.gray
 
-        _, self.frame = self.src.read()
+        self.frame = frame
 
         # process pipeline
         self.preprocess()
@@ -215,16 +211,13 @@ class RodentTracker:
                           [np.array([self.frame_width // 2, self.frame_height // 2]) - np.int32(self.path)], False,
                           (0, 0, 255))
 
-        for centre in [np.int32(tr[-1]) for tr in self.features]:
-            cv2.circle(self.visualization, centre, 2, (0, 255, 0), -1)
+        # for centre in [np.int32(tr[-1]) for tr in self.features]:
+        #     cv2.circle(self.visualization, centre, 2, (0, 255, 0), -1)
 
         cv2.imshow("frame", self.visualization)
         cv2.waitKey(1)
 
     def run_frame(self):
-        # read and process frame
-        self.read_frame()
-
         # compute positions of new features for new frame
         if self.features:
             self.run_optical_flow()
@@ -246,4 +239,6 @@ if __name__ == '__main__':
     tracker = RodentTracker(cap, visualize=True, odometry_history=20)
 
     while True:
+        _, frame = cap.read()
+        tracker.read_frame(frame)
         tracker.run_frame()
