@@ -200,8 +200,9 @@ class RodentTracker:
 
             # ensure good flow is not all zeros and is within a certain threshold
             if np.all(good_flow) and np.sum(np.square(good_flow)) < self.max_flow_squared:
-                self.path = np.append(self.path - good_flow, [[0, 0]], axis=0)
+                self.path = np.append(self.path, [good_flow], axis=0)
                 self.path = self.path[-self.odometry_history:]
+            
 
     def visualize(self):
         cv2.polylines(self.visualization, [np.int32(tr) for tr in self.features], False, (0, 255, 0))
@@ -233,6 +234,7 @@ class RodentTracker:
         if self.visualize_frames:
             self.visualize()
 
+        return self.path[-1]
 
 if __name__ == '__main__':
     cap = cv2.VideoCapture(0)
